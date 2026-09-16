@@ -1,0 +1,3 @@
+C:/Dev/Number_Match_Solver/Interactive_Pair_Tool/build/CMakeFiles/interactive_pair_tool.dir
+C:/Dev/Number_Match_Solver/Interactive_Pair_Tool/build/CMakeFiles/ALL_BUILD.dir
+C:/Dev/Number_Match_Solver/Interactive_Pair_Tool/build/CMakeFiles/ZERO_CHECK.dir
