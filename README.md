@@ -11,7 +11,7 @@ cmake --build build --config Release
 
 ## Run
 
-Input la chuoi cac so lien nhau tu `1` den `9`. 44 so dau tao bang ban dau va duoc phep hoan toan random; khong co yeu cau so luong cua cac nhom `(1,9)`, `(2,8)`, `(3,7)`, `(4,6)` hoac `5` phai chan. Neu input co nhieu hon 44 so, moi lan bam `+` se them toi da mot hang tiep theo gom 9 so tu phan con lai.
+Input la chuoi cac so lien nhau tu `1` den `9`. Khong gioi han so luong so ban dau; neu input co nhieu hon so cho phep trong mot hang, moi lan bam `+` se them toi da mot hang tiep theo gom 9 so tu phan con lai.
 
 ```powershell
 .\build\Release\number_match_solver.exe 11265493...

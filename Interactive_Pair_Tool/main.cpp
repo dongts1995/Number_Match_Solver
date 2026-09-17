@@ -7,7 +7,6 @@
 namespace
 {
     constexpr int kColumns = 9;
-    constexpr int kInitialNumbers = 44;
     constexpr int kMaxAdds = 5;
 
     struct Board
@@ -25,6 +24,7 @@ namespace
         bool diagonal;
         int distance;
         bool removesRow;
+        int nextPairs;
     };
 
     bool occupied(const Board &board, int row, int column)
@@ -57,6 +57,93 @@ namespace
         return std::any_of(next.cells.begin(), next.cells.end(), emptyRow);
     }
 
+    void removePair(Board &board, const Pair &pair);
+    void addRemainingNumbers(Board &board);
+
+    int countAvailablePairs(const Board &board)
+    {
+        std::vector<Pair> pairs;
+        const int directions[8][2] = {
+            {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
+
+        for (int row = 0; row < static_cast<int>(board.cells.size()); ++row)
+        {
+            for (int column = 0; column < kColumns; ++column)
+            {
+                if (!occupied(board, row, column))
+                    continue;
+
+                for (const auto &direction : directions)
+                {
+                    int nextRow = row + direction[0];
+                    int nextColumn = column + direction[1];
+                    while (inBounds(board, nextRow, nextColumn) &&
+                           !occupied(board, nextRow, nextColumn))
+                    {
+                        nextRow += direction[0];
+                        nextColumn += direction[1];
+                    }
+                    if (inBounds(board, nextRow, nextColumn) &&
+                        (nextRow > row || (nextRow == row && nextColumn > column)) &&
+                        matches(board.cells[row][column], board.cells[nextRow][nextColumn]))
+                    {
+                        const int rowDelta = nextRow - row;
+                        const int columnDelta = nextColumn - column;
+                        Pair pair{row, column, nextRow, nextColumn,
+                                  rowDelta != 0 && columnDelta != 0,
+                                  std::max(std::abs(rowDelta), std::abs(columnDelta)), false, 0};
+                        pair.removesRow = removesRow(board, pair);
+                        pairs.push_back(pair);
+                    }
+                }
+            }
+        }
+
+        for (int row = 0; row + 1 < static_cast<int>(board.cells.size()); ++row)
+        {
+            int last = -1;
+            int first = -1;
+            for (int column = kColumns - 1; column >= 0; --column)
+            {
+                if (occupied(board, row, column))
+                {
+                    last = column;
+                    break;
+                }
+            }
+            for (int column = 0; column < kColumns; ++column)
+            {
+                if (occupied(board, row + 1, column))
+                {
+                    first = column;
+                    break;
+                }
+            }
+            if (last >= 0 && first >= 0 &&
+                matches(board.cells[row][last], board.cells[row + 1][first]))
+            {
+                const int rowDelta = (row + 1) - row;
+                const int columnDelta = first - last;
+                Pair pair{row, last, row + 1, first,
+                          rowDelta != 0 && columnDelta != 0,
+                          std::max(std::abs(rowDelta), std::abs(columnDelta)), false, 0};
+                pair.removesRow = removesRow(board, pair);
+                pairs.push_back(pair);
+            }
+        }
+
+        return static_cast<int>(pairs.size());
+    }
+
+    int predictedPairsAfterMove(const Board &board, const Pair &pair)
+    {
+        Board next = board;
+        removePair(next, pair);
+        if (next.cells.empty())
+            return 0;
+        return countAvailablePairs(next);
+    }
+
     void addPair(std::vector<Pair> &pairs, const Board &board,
                  int firstRow, int firstColumn, int secondRow, int secondColumn)
     {
@@ -64,8 +151,9 @@ namespace
         const int columnDelta = secondColumn - firstColumn;
         Pair pair{firstRow, firstColumn, secondRow, secondColumn,
                   rowDelta != 0 && columnDelta != 0,
-                  std::max(std::abs(rowDelta), std::abs(columnDelta)), false};
+                  std::max(std::abs(rowDelta), std::abs(columnDelta)), false, 0};
         pair.removesRow = removesRow(board, pair);
+        pair.nextPairs = predictedPairsAfterMove(board, pair);
         pairs.push_back(pair);
     }
 
@@ -131,6 +219,8 @@ namespace
 
         std::sort(pairs.begin(), pairs.end(), [](const Pair &left, const Pair &right)
                   {
+        if (left.nextPairs != right.nextPairs)
+            return left.nextPairs > right.nextPairs;
         if (left.diagonal != right.diagonal)
             return left.diagonal > right.diagonal;
         if (left.distance != right.distance)
@@ -145,6 +235,80 @@ namespace
             return left.secondRow < right.secondRow;
         return left.secondColumn < right.secondColumn; });
         return pairs;
+    }
+
+    void printBoard(const Board &board, const std::vector<Pair> &pairs)
+    {
+        const Pair *highlightPair = pairs.empty() ? nullptr : &pairs.front();
+        std::cout << "\nMa tran hien tai ('.' = o xam):\n    ";
+        for (int column = 1; column <= kColumns; ++column)
+            std::cout << column << ' ';
+        std::cout << '\n';
+        for (int row = 0; row < static_cast<int>(board.cells.size()); ++row)
+        {
+            std::cout << row + 1 << " | ";
+            for (int column = 0; column < kColumns; ++column)
+            {
+                const int value = board.cells[row][column];
+                const bool notAddedYet = row == static_cast<int>(board.cells.size()) - 1 &&
+                                         board.appendColumn != 0 &&
+                                         column >= board.appendColumn;
+                const bool highlightCell = highlightPair != nullptr &&
+                                           ((row == highlightPair->firstRow && column == highlightPair->firstColumn) ||
+                                            (row == highlightPair->secondRow && column == highlightPair->secondColumn));
+                if (notAddedYet)
+                    std::cout << ' ';
+                else if (value == 0)
+                    std::cout << '.';
+                else if (highlightCell)
+                    std::cout << '[' << value << ']';
+                else
+                    std::cout << value;
+                std::cout << ' ';
+            }
+            std::cout << '\n';
+        }
+    }
+
+    void printPairs(const Board &board, const std::vector<Pair> &pairs)
+    {
+        std::cout << "\nCac cap available (uu tien theo so cap sau khi chon, roi cheo, xa, khong xoa hang):\n";
+        for (size_t index = 0; index < pairs.size(); ++index)
+        {
+            const Pair &pair = pairs[index];
+            std::cout << index + 1 << ". (" << pair.firstRow + 1 << ',' << pair.firstColumn + 1
+                      << ")=" << board.cells[pair.firstRow][pair.firstColumn]
+                      << " <-> (" << pair.secondRow + 1 << ',' << pair.secondColumn + 1
+                      << ")=" << board.cells[pair.secondRow][pair.secondColumn]
+                      << (pair.diagonal ? " [cheo" : " [thang/dung")
+                      << ", cach " << pair.distance
+                      << (pair.removesRow ? ", xoa hang]" : ", giu hang]")
+                      << " -> sau khi chon se co " << pair.nextPairs << " cap con lai\n";
+        }
+    }
+
+    bool parseInput(const std::string &input, Board &board, std::vector<int> &values)
+    {
+        for (char character : input)
+        {
+            if (character == ' ' || character == '\t' || character == '\r' || character == '\n')
+                continue;
+            if (character < '1' || character > '9')
+                return false;
+            values.push_back(character - '0');
+        }
+        if (values.empty())
+            return false;
+
+        const size_t initialCount = values.size();
+        for (size_t index = 0; index < initialCount; ++index)
+        {
+            if (index % kColumns == 0)
+                board.cells.push_back(std::vector<int>(kColumns, 0));
+            board.cells.back()[index % kColumns] = values[index];
+        }
+        board.appendColumn = static_cast<int>(initialCount % kColumns);
+        return true;
     }
 
     void removePair(Board &board, const Pair &pair)
@@ -199,68 +363,6 @@ namespace
             board.appendColumn = count < kColumns ? count : 0;
         }
     }
-
-    void printBoard(const Board &board)
-    {
-        std::cout << "\nMa tran hien tai ('.' = o xam):\n    ";
-        for (int column = 1; column <= kColumns; ++column)
-            std::cout << column << ' ';
-        std::cout << '\n';
-        for (int row = 0; row < static_cast<int>(board.cells.size()); ++row)
-        {
-            std::cout << row + 1 << " | ";
-            for (int column = 0; column < kColumns; ++column)
-            {
-                const int value = board.cells[row][column];
-                const bool notAddedYet = row == static_cast<int>(board.cells.size()) - 1 &&
-                                         board.appendColumn != 0 &&
-                                         column >= board.appendColumn;
-                std::cout << (notAddedYet ? ' ' : (value == 0 ? '.' : static_cast<char>('0' + value)))
-                          << ' ';
-            }
-            std::cout << '\n';
-        }
-    }
-
-    void printPairs(const Board &board, const std::vector<Pair> &pairs)
-    {
-        std::cout << "\nCac cap available (uu tien cheo, xa, khong xoa hang):\n";
-        for (size_t index = 0; index < pairs.size(); ++index)
-        {
-            const Pair &pair = pairs[index];
-            std::cout << index + 1 << ". (" << pair.firstRow + 1 << ',' << pair.firstColumn + 1
-                      << ")=" << board.cells[pair.firstRow][pair.firstColumn]
-                      << " <-> (" << pair.secondRow + 1 << ',' << pair.secondColumn + 1
-                      << ")=" << board.cells[pair.secondRow][pair.secondColumn]
-                      << (pair.diagonal ? " [cheo" : " [thang/dung")
-                      << ", cach " << pair.distance
-                      << (pair.removesRow ? ", xoa hang]" : ", giu hang]") << '\n';
-        }
-    }
-
-    bool parseInput(const std::string &input, Board &board, std::vector<int> &values)
-    {
-        for (char character : input)
-        {
-            if (character == ' ' || character == '\t' || character == '\r' || character == '\n')
-                continue;
-            if (character < '1' || character > '9')
-                return false;
-            values.push_back(character - '0');
-        }
-        if (values.empty())
-            return false;
-
-        const size_t initialCount = std::min(values.size(), static_cast<size_t>(kInitialNumbers));
-        for (size_t index = 0; index < initialCount; ++index)
-        {
-            if (index % kColumns == 0)
-                board.cells.push_back(std::vector<int>(kColumns, 0));
-            board.cells.back()[index % kColumns] = values[index];
-        }
-        board.appendColumn = static_cast<int>(initialCount % kColumns);
-        return true;
-    }
 }
 
 int main(int argc, char *argv[])
@@ -282,8 +384,8 @@ int main(int argc, char *argv[])
     int addCount = 0;
     while (!board.cells.empty())
     {
-        printBoard(board);
         const std::vector<Pair> pairs = availablePairs(board);
+        printBoard(board, pairs);
         if (pairs.empty())
         {
             std::cout << "\nKhong con cap available.";

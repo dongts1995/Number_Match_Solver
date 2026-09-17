@@ -1,3 +1,0 @@
-C:/Dev/Number_Match_Solver/build/CMakeFiles/number_match_solver.dir
-C:/Dev/Number_Match_Solver/build/CMakeFiles/ALL_BUILD.dir
-C:/Dev/Number_Match_Solver/build/CMakeFiles/ZERO_CHECK.dir

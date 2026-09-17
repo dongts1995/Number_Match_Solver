@@ -2,13 +2,13 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Dev\Number_Match_Solver\Interactive_Pair_Tool\build\x64\Release\ZERO_CHECK</FullPath>
+      <FullPath>D:\Dev\Number_Match_Solver\Interactive_Pair_Tool\build\x64\Release\ZERO_CHECK</FullPath>
     </ProjectOutput>
     <ProjectOutput>
-      <FullPath>C:\Dev\Number_Match_Solver\Interactive_Pair_Tool\build\Release\interactive_pair_tool.exe</FullPath>
+      <FullPath>D:\Dev\Number_Match_Solver\Interactive_Pair_Tool\build\Release\interactive_pair_tool.exe</FullPath>
     </ProjectOutput>
     <ProjectOutput>
-      <FullPath>C:\Dev\Number_Match_Solver\Interactive_Pair_Tool\build\x64\Release\ALL_BUILD</FullPath>
+      <FullPath>D:\Dev\Number_Match_Solver\Interactive_Pair_Tool\build\x64\Release\ALL_BUILD</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />
